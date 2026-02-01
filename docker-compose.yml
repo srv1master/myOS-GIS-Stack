@@ -1,0 +1,25 @@
+services:
+  myos:
+    build: .
+    container_name: ${CONTAINER_NAME:-myOS}
+    env_file: .env
+    volumes:
+      - ./root:/root
+      - ./qgis:/root/.local/share/QGIS
+      - ./postgres_data:/var/lib/postgresql/data
+      - ./pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "${SSH_PORT:-2225}:22"
+      - "${VNC_PORT:-8081}:8081"
+      - "${PGADMIN_PORT:-5050}:80"
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      - TZ=${TZ:-Europe/Berlin}
+    restart: unless-stopped
+    shm_size: '2gb' # Erhöhter Shared Memory für QGIS Stabilität
+    networks:
+      - myos_net
+
+networks:
+  myos_net:
+    name: ${PROJECT_NAME:-myos}_network

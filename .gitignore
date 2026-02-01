@@ -1,0 +1,20 @@
+# Docker & System
+.env
+*.log
+*.lock
+.DS_Store
+
+# Datenbank & Persistenz (Sehr wichtig!)
+postgres_data/
+pgadmin_data/
+qgis/
+root/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
