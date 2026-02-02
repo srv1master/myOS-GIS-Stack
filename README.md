@@ -61,9 +61,10 @@ docker-compose up -d --build
   - Login: `admin@admin.com` (oder wie in `.env` gesetzt)
   - PW: `adminpass`
 - **Datenbank-Connect:**
-  - Host: `localhost`
-  - Port: `5432`
-  - DB: `myos_gis`
+  - Host: `localhost`, Port: `5432`, DB: `myos_gis`
+- **SSH-Zugriff (Terminal):**
+  - Befehl: `ssh root@localhost -p 2225`
+  - Passwort: `ospass` (oder wie in `ROOT_PASSWORD` gesetzt)
 
 ### 3. Ordnerstruktur
 - `qgis/`: Deine Profile, Plugins und lokalen GIS-Layer.
