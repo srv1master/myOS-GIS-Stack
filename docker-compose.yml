@@ -4,10 +4,11 @@ services:
     container_name: ${CONTAINER_NAME:-myOS}
     env_file: .env
     volumes:
-      - ./root:/root
-      - ./qgis:/root/.local/share/QGIS
+      - ./root_data:/root
+      - ./qgis_data:/root/.local/share/QGIS
       - ./postgres_data:/var/lib/postgresql/data
       - ./pgadmin_data:/var/lib/pgadmin
+      - ./qgis_env_data:/opt/qgis_env
     ports:
       - "${SSH_PORT:-2225}:22"
       - "${VNC_PORT:-8081}:8081"

@@ -1,23 +1,23 @@
-FROM ubuntu:22.04
+FROM debian:trixie-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Berlin
 
-# 1. Basis-System & Repositories (PostgreSQL 18)
+# 1. Basis-System & Repositories
+# bzip2 wird für micromamba install benötigt.
+# procps für Prozess-Management.
 RUN apt-get update && apt-get install -y \
-    curl ca-certificates gnupg lsb-release sudo software-properties-common wget \
-    tzdata locales language-pack-de language-pack-de-base \
+    curl ca-certificates gnupg lsb-release sudo wget bzip2 \
+    tzdata locales procps \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
-    && locale-gen de_DE.UTF-8
+    && sed -i 's/# de_DE.UTF-8 UTF-8/de_DE.UTF-8 UTF-8/' /etc/locale.gen \
+    && locale-gen
 
-# PostgreSQL 18 Repo
-RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg && \
-    echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
-
-# 2. Installation aller Komponenten
+# 2. Installation aller Komponenten (inkl. GUI Libs für QGIS/Qt in Slim)
+# Slim-Images fehlen wichtige X11/GL Libraries, die wir hier nachrüsten (libgl1, libxkbcommon, etc.)
 RUN apt-get update && apt-get install -y \
-    postgresql-18 \
-    postgresql-18-postgis-3 \
+    postgresql \
+    postgis \
     openssh-server \
     xvfb \
     x11vnc \
@@ -27,15 +27,32 @@ RUN apt-get update && apt-get install -y \
     devilspie2 \
     python3-pip \
     dbus-x11 \
+    fonts-open-sans \
+    fonts-dejavu \
+    fonts-liberation \
+    fontconfig \
+    libgl1 \
+    libglib2.0-0 \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
+    libxkbcommon-x11-0 \
+    libdbus-1-3 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # 3. pgAdmin4 & Gunicorn via PIP
-RUN pip3 install pgadmin4 gunicorn
+RUN pip3 install pgadmin4 gunicorn --break-system-packages --ignore-installed --no-cache-dir
 
 # 4. Micromamba für QGIS 3.28
-RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-aarch64/latest | tar -xj bin/micromamba && \
-    mv bin/micromamba /usr/local/bin/ && \
-    micromamba create -y -p /opt/qgis_env -c conda-forge qgis=3.28 python=3.10
+# Download & Install Micromamba (braucht bzip2)
+RUN curl -Ls https://micro.mamba.pm/api/micromamba/linux-aarch64/latest | tar -xj -C /usr/local/bin --strip-components=1 bin/micromamba
+
+# Create Env (mit --always-copy gegen Symlink Errors auf OverlayFS/Mac)
+RUN micromamba create -y -p /opt/qgis_env -c conda-forge qgis=3.28 python=3.10 --always-copy && \
+    micromamba clean --all -y
+
+# BACKUP: Wir verschieben das Env, damit wir es im Entrypoint in das persistente Volume kopieren können
+RUN mv /opt/qgis_env /opt/qgis_env_backup && mkdir -p /opt/qgis_env
 
 # 5. Konfiguration
 ENV PATH="/opt/qgis_env/bin:$PATH"
